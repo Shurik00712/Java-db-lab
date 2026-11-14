@@ -197,7 +197,11 @@ public final class Parser {
                 definition.nullable = false;
             }
             primaryKeyFound |= primaryKey.equals(definition.name);
-            fields.add(definition.toField());
+            try {
+                fields.add(definition.toField());
+            } catch (IllegalArgumentException e) {
+                throw new ParseException(e.getMessage(), peek().position());
+            }
         }
         if (!primaryKeyFound) {
             throw new ParseException("Unknown primary key field '" + primaryKey + "'",

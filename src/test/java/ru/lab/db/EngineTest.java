@@ -4,6 +4,7 @@ import org.junit.Test;
 import ru.lab.db.engine.Engine;
 import ru.lab.db.engine.QueryResult;
 import ru.lab.db.error.ConstraintViolationException;
+import ru.lab.db.lang.Parser;
 import ru.lab.db.model.Schemas;
 import ru.lab.db.model.Cell;
 import ru.lab.db.model.Condition;
@@ -213,6 +214,17 @@ public class EngineTest {
         Engine engine = new Engine(db);
         engine.select("employers", null,
             new Condition("verified", Condition.GT, Cell.ofBoolean(false)));
+    }
+
+    @Test(expected = ConstraintViolationException.class)
+    public void duplicateCreateTableIsReportedAsSqlError() {
+        Engine engine = new Engine(Schemas.create());
+        engine.createTable(new Parser(
+            "CREATE TABLE notes (id INTEGER PRIMARY KEY, message STRING);")
+            .parse().schema());
+        engine.createTable(new Parser(
+            "CREATE TABLE notes (id INTEGER PRIMARY KEY, message STRING);")
+            .parse().schema());
     }
 
     @Test

@@ -34,7 +34,7 @@ public final class Database implements Serializable {
         Objects.requireNonNull(table, "table");
         String name = table.schema().name();
         if (tables.containsKey(name)) {
-            throw new IllegalArgumentException("Table '" + name + "' already exists");
+            throw new ConstraintViolationException("Table '" + name + "' already exists");
         }
         tables.put(name, table);
     }
