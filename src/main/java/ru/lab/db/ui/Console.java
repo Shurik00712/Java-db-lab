@@ -11,21 +11,27 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
-/** Интерактивный консольный интерфейс для ввода SQL-команд. */
+/** Interactive console for entering SQL commands. */
 public final class Console {
 
     private final Engine engine;
     private final Printer printer;
     private final BufferedReader in;
 
+    /**
+     * Creates a console that executes commands through a database engine.
+     *
+     * @param engine the database engine
+     */
     public Console(Engine engine) {
         this.engine = engine;
         this.printer = new Printer();
         this.in = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
     }
 
+    /** Reads and executes commands until the user exits. */
     public void run() {
-        printer.info("Vacancy DB. Введите 'exit' для выхода.");
+        printer.info("Vacancy DB. Type 'exit' to quit.");
         while (true) {
             System.out.print("db> ");
             System.out.flush();
@@ -33,7 +39,7 @@ public final class Console {
             try {
                 line = in.readLine();
             } catch (IOException e) {
-                printer.info("Ошибка чтения: " + e.getMessage());
+                printer.info("Read error: " + e.getMessage());
                 return;
             }
             if (line == null) {
@@ -50,7 +56,7 @@ public final class Console {
             } catch (DbException e) {
                 printer.error(e.getMessage());
             } catch (IllegalArgumentException e) {
-                printer.error("Непредвиденная ошибка: " + e);
+                printer.error("Unexpected error: " + e);
             }
         }
     }
@@ -60,7 +66,7 @@ public final class Console {
             case INSERT: {
                 int affected =
                     engine.insert(statement.table(), statement.columns(), statement.rows());
-                printer.modified("добавлен", affected);
+                printer.modified("inserted", affected);
                 break;
             }
             case SELECT: {
@@ -72,29 +78,29 @@ public final class Console {
             case UPDATE: {
                 int affected =
                     engine.update(statement.table(), statement.assignments(), statement.where());
-                printer.modified("обновлен", affected);
+                printer.modified("updated", affected);
                 break;
             }
             case DELETE: {
                 int affected = engine.delete(statement.table(), statement.where());
-                printer.modified("удален", affected);
+                printer.modified("deleted", affected);
                 break;
             }
             case CREATE_INDEX:
                 engine.createIndex(statement.indexName(), statement.table(), statement.indexField());
-                printer.info("Индекс создан");
+                printer.info("Index created");
                 break;
             case DROP_INDEX:
                 engine.dropIndex(statement.indexName());
-                printer.info("Индекс удален");
+                printer.info("Index dropped");
                 break;
             case CREATE_TABLE:
                 engine.createTable(statement.schema());
-                printer.info("Таблица создана");
+                printer.info("Table created");
                 break;
             case DROP_TABLE:
                 engine.dropTable(statement.table());
-                printer.info("Таблица удалена");
+                printer.info("Table dropped");
                 break;
             default:
                 throw new DbException("Unsupported statement: " + statement.kind());

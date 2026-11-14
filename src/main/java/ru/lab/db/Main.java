@@ -8,16 +8,24 @@ import ru.lab.db.ui.Console;
 
 import java.nio.file.Paths;
 
-/** Точка входа консольного приложения. */
+/** Entry point of the console application. */
 public final class Main {
 
+    private Main() {
+    }
+
+    /**
+     * Loads the database and starts the console interface.
+     *
+     * @param args command-line arguments
+     */
     public static void main(String[] args) {
         Store store = new Store(Paths.get("data"));
         Database database;
         try {
             database = store.load();
         } catch (StorageException e) {
-            System.err.println("Не удалось загрузить базу: " + e.getMessage());
+            System.err.println("Failed to load the database: " + e.getMessage());
             System.exit(2);
             return;
         }

@@ -19,17 +19,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Выполняет операции над таблицами и сохраняет изменения. */
+/** Executes table operations and saves changes. */
 public final class Engine {
 
     private final Database database;
     private final IndexManager indexes;
     private final Store store;
 
+    /**
+     * Creates an engine without automatic persistence.
+     *
+     * @param database the database to use
+     */
     public Engine(Database database) {
         this(database, null);
     }
 
+    /**
+     * Creates an engine with a store for saving changes.
+     *
+     * @param database the database to use
+     * @param store the store, or {@code null} to disable persistence
+     */
     public Engine(Database database, Store store) {
         if (database == null) {
             throw new IllegalArgumentException("Database must not be null");
@@ -39,6 +50,14 @@ public final class Engine {
         this.store = store;
     }
 
+    /**
+     * Selects records and uses an equality index when available.
+     *
+     * @param tableName the table name
+     * @param columns the selected fields, or an empty list for all fields
+     * @param where the optional condition
+     * @return the query result
+     */
     public QueryResult select(String tableName, List<String> columns, Condition where) {
         Table table = database.table(tableName);
         Schema schema = table.schema();
@@ -57,16 +76,35 @@ public final class Engine {
         return new QueryResult(targetColumns, records);
     }
 
+    /**
+     * Creates a hash index and saves its definition.
+     *
+     * @param name the index name
+     * @param tableName the table name
+     * @param fieldName the indexed field name
+     * @return the created index
+     */
     public HashIndex createIndex(String name, String tableName, String fieldName) {
         HashIndex index = indexes.create(name, tableName, fieldName);
         persist();
         return index;
     }
 
+    /**
+     * Finds an index by name.
+     *
+     * @param name the index name
+     * @return the index, or {@code null} if it is not found
+     */
     public HashIndex findIndex(String name) {
         return indexes.findByName(name);
     }
 
+    /**
+     * Removes an index and saves the change.
+     *
+     * @param name the index name
+     */
     public void dropIndex(String name) {
         if (indexes.findByName(name) == null) {
             throw new ConstraintViolationException("Unknown index '" + name + "'");
@@ -75,6 +113,11 @@ public final class Engine {
         persist();
     }
 
+    /**
+     * Creates a table with the given schema.
+     *
+     * @param schema the new table schema
+     */
     public void createTable(Schema schema) {
         if (schema == null) {
             throw new IllegalArgumentException("Schema must not be null");
@@ -85,12 +128,25 @@ public final class Engine {
         persist();
     }
 
+    /**
+     * Removes a table and its indexes if no other table references it.
+     *
+     * @param tableName the table name
+     */
     public void dropTable(String tableName) {
         database.drop(tableName);
         indexes.dropTable(tableName);
         persist();
     }
 
+    /**
+     * Inserts one or more records after checking constraints.
+     *
+     * @param tableName the target table
+     * @param columnNames the inserted fields, or an empty list for all fields
+     * @param rowsValues the values to insert
+     * @return the number of inserted records
+     */
     public int insert(String tableName, List<String> columnNames,
                       List<List<Cell>> rowsValues) {
         Table table = database.table(tableName);
@@ -144,6 +200,14 @@ public final class Engine {
         return records.size();
     }
 
+    /**
+     * Updates records that match a condition.
+     *
+     * @param tableName the table to update
+     * @param changes the new field values
+     * @param where the condition, or {@code null} for all records
+     * @return the number of updated records
+     */
     public int update(String tableName, Map<String, Cell> changes, Condition where) {
         Table table = database.table(tableName);
         Schema schema = table.schema();
@@ -177,6 +241,13 @@ public final class Engine {
         return matched.size();
     }
 
+    /**
+     * Deletes records that match a condition.
+     *
+     * @param tableName the table to delete from
+     * @param where the condition, or {@code null} for all records
+     * @return the number of deleted records
+     */
     public int delete(String tableName, Condition where) {
         Table table = database.table(tableName);
         Schema schema = table.schema();
@@ -221,6 +292,7 @@ public final class Engine {
         return names;
     }
 
+    /** Saves the database when persistence is enabled. */
     private void persist() {
         if (store != null) store.save(database);
     }

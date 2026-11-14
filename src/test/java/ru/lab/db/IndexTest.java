@@ -121,6 +121,13 @@ public class IndexTest {
         Files.createDirectory(dir.resolve("database.dat"));
         Store store = new Store(dir);
         Database db = Schemas.create();
+        Engine setup = new Engine(db);
+        insertEmployer(setup);
+        setup.createIndex("idx_employer_name", "employers", "name");
+        setup.createTable(new Parser(
+            "CREATE TABLE notes (id INTEGER PRIMARY KEY, message STRING);")
+            .parse().schema());
+        setup.createIndex("idx_notes_message", "notes", "message");
         Engine engine = new Engine(db, store);
 
         try {
@@ -134,11 +141,56 @@ public class IndexTest {
             engine.insert(
                 "employers", Collections.<String>emptyList(),
                 Collections.singletonList(Arrays.asList(
-                    Cell.ofInt(1), Cell.ofString("Acme"), Cell.ofBoolean(true))));
+                    Cell.ofInt(2), Cell.ofString("Other"), Cell.ofBoolean(false))));
             fail("Expected save to fail");
         } catch (StorageException expected) {
         }
+        assertEquals(2, db.table("employers").size());
+
+        Map<String, Cell> changes = new LinkedHashMap<>();
+        changes.put("name", Cell.ofString("Changed"));
+        try {
+            engine.update("employers", changes,
+                new Condition("id", Condition.EQ, Cell.ofInt(1)));
+            fail("Expected save to fail");
+        } catch (StorageException expected) {
+        }
+        assertEquals("Changed", db.table("employers").findByPk(Cell.ofInt(1))
+            .get("name").asString());
+        assertEquals(Collections.singleton(Cell.ofInt(1)),
+            engine.findIndex("idx_employer_name")
+                .candidates(Cell.ofString("Changed"), Condition.EQ));
+        assertEquals(Collections.emptySet(),
+            engine.findIndex("idx_employer_name")
+                .candidates(Cell.ofString("Acme"), Condition.EQ));
+
+        try {
+            engine.delete("employers",
+                new Condition("id", Condition.EQ, Cell.ofInt(1)));
+            fail("Expected save to fail");
+        } catch (StorageException expected) {
+        }
+        assertNull(db.table("employers").findByPk(Cell.ofInt(1)));
         assertEquals(1, db.table("employers").size());
+
+        try {
+            engine.dropIndex("idx_employer_name");
+            fail("Expected save to fail");
+        } catch (StorageException expected) {
+        }
+        assertNull(engine.findIndex("idx_employer_name"));
+
+        try {
+            engine.dropTable("notes");
+            fail("Expected save to fail");
+        } catch (StorageException expected) {
+        }
+        assertNull(engine.findIndex("idx_notes_message"));
+        try {
+            db.table("notes");
+            fail("Expected table to be dropped");
+        } catch (DbException expected) {
+        }
     }
 
     @Test

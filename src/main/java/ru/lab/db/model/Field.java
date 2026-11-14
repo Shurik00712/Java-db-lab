@@ -5,22 +5,47 @@ import ru.lab.db.error.ConstraintViolationException;
 import java.io.Serializable;
 import java.util.Objects;
 
-/** Описание одного поля таблицы и его ограничений. */
+/** Defines a table field and its constraints. */
 public final class Field implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    /** Field name. */
     private final String name;
+    /** Field type. */
     private final FieldType type;
+    /** Whether NULL is allowed. */
     private final boolean nullable;
+    /** Whether the field is the primary key. */
     private final boolean primaryKey;
+    /** Default value or {@code null}. */
     private final Cell defaultValue;
+    /** Minimum numeric value or {@code null}. */
     private final Double minimum;
 
+    /**
+     * Creates a field definition without a minimum numeric value.
+     *
+     * @param name the field name
+     * @param type the value type
+     * @param nullable whether {@code NULL} is allowed
+     * @param primaryKey whether this field is the primary key
+     * @param defaultValue the default value, or {@code null}
+     */
     public Field(String name, FieldType type, boolean nullable,
                  boolean primaryKey, Cell defaultValue) {
         this(name, type, nullable, primaryKey, defaultValue, null);
     }
 
+    /**
+     * Creates a field definition with constraints.
+     *
+     * @param name the field name
+     * @param type the value type
+     * @param nullable whether {@code NULL} is allowed
+     * @param primaryKey whether this field is the primary key
+     * @param defaultValue the default value, or {@code null}
+     * @param minimum the minimum numeric value, or {@code null}
+     */
     public Field(String name, FieldType type, boolean nullable,
                  boolean primaryKey, Cell defaultValue, Double minimum) {
         if (name == null || name.trim().isEmpty()) {
@@ -45,7 +70,11 @@ public final class Field implements Serializable {
         if (defaultValue != null) check(defaultValue);
     }
 
-    /** Проверяет тип значения и допустимость NULL. */
+    /**
+     * Checks the value type, NULL constraint, and minimum value.
+     *
+     * @param value the value to check
+     */
     public void check(Cell value) {
         Objects.requireNonNull(value, "value");
         if (value.isNull()) {
@@ -65,13 +94,49 @@ public final class Field implements Serializable {
         }
     }
 
+    /**
+     * Returns the field name.
+     *
+     * @return the field name
+     */
     public String name() { return name; }
+
+    /**
+     * Returns the field type.
+     *
+     * @return the field type
+     */
     public FieldType type() { return type; }
+
+    /**
+     * Checks whether the field allows NULL.
+     *
+     * @return {@code true} if the value may be NULL
+     */
     public boolean nullable() { return nullable; }
+
+    /**
+     * Checks whether the field is the primary key.
+     *
+     * @return {@code true} if the field is the primary key
+     */
     public boolean primaryKey() { return primaryKey; }
+
+    /**
+     * Returns the default value.
+     *
+     * @return the default value or {@code null}
+     */
     public Cell defaultValue() { return defaultValue; }
+
+    /**
+     * Checks whether a default value is set.
+     *
+     * @return {@code true} if a default value is set
+     */
     public boolean hasDefault() { return defaultValue != null; }
 
+    /** Returns a text description of the field and its constraints. */
     @Override
     public String toString() {
         StringBuilder out = new StringBuilder(name).append(' ').append(type);

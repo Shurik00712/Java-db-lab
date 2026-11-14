@@ -7,16 +7,28 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
-/** Неизменяемый набор значений одной записи таблицы. */
+/** Immutable set of values for one table record. */
 public final class Record implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    /** Record field values. */
     private final Map<String, Cell> values;
 
+    /**
+     * Creates a record from field values.
+     *
+     * @param values the field values
+     */
     public Record(Map<String, Cell> values) {
         this.values = new LinkedHashMap<>(Objects.requireNonNull(values, "values"));
     }
 
+    /**
+     * Returns a field value.
+     *
+     * @param field the field name
+     * @return the field value
+     */
     public Cell get(String field) {
         Cell value = values.get(field);
         if (value == null) {
@@ -25,10 +37,21 @@ public final class Record implements Serializable {
         return value;
     }
 
+    /**
+     * Returns a copy of the record values.
+     *
+     * @return the field values
+     */
     public Map<String, Cell> values() {
         return new LinkedHashMap<>(values);
     }
 
+    /**
+     * Checks whether the record values are equal.
+     *
+     * @param other the object to compare
+     * @return {@code true} if the values are equal
+     */
     @Override
     public boolean equals(Object other) {
         if (this == other) return true;
@@ -36,11 +59,13 @@ public final class Record implements Serializable {
         return values.equals(((Record) other).values);
     }
 
+    /** Returns the record's hash code. */
     @Override
     public int hashCode() {
         return values.hashCode();
     }
 
+    /** Returns the record as text. */
     @Override
     public String toString() {
         return values.toString();

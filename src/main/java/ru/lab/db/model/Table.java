@@ -12,28 +12,53 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-/** Таблица, хранящая записи по первичному ключу. */
+/** A table that stores records by primary key. */
 public final class Table implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    /** Table schema. */
     private final Schema schema;
+    /** Table records keyed by primary key. */
     private final Map<Cell, Record> rows;
 
+    /**
+     * Creates an empty table with the given schema.
+     *
+     * @param schema the table schema
+     */
     public Table(Schema schema) {
         this.schema = Objects.requireNonNull(schema, "schema");
         this.rows = new LinkedHashMap<>();
     }
 
+    /**
+     * Returns the table schema.
+     *
+     * @return the table schema
+     */
     public Schema schema() { return schema; }
 
     private Cell primaryKeyOf(Record record) {
         return record.get(schema.primaryKey());
     }
 
+    /**
+     * Finds a record by primary key.
+     *
+     * @param pk the primary key value
+     * @return the record, or {@code null} if it is not found
+     */
     public Record findByPk(Cell pk) {
         return rows.get(pk);
     }
 
+    /**
+     * Checks whether the table contains the given field value.
+     *
+     * @param field the field name
+     * @param value the value to find
+     * @return {@code true} if the value is found
+     */
     public boolean containsValue(String field, Cell value) {
         for (Record record : rows.values()) {
             if (record.get(field).equals(value)) return true;
@@ -41,11 +66,23 @@ public final class Table implements Serializable {
         return false;
     }
 
+    /**
+     * Selects records that match a condition.
+     *
+     * @param where the condition, or {@code null} to select all records
+     * @return the matching records
+     */
     public List<Record> select(Condition where) {
         return select(where, null);
     }
 
-    /** Выбирает записи по условию, при необходимости ограничивая поиск ключами индекса. */
+    /**
+     * Selects records, optionally limiting the search to indexed keys.
+     *
+     * @param where the condition, or {@code null} to select all records
+     * @param candidatePks candidate keys, or {@code null} for a full scan
+     * @return the matching records
+     */
     public List<Record> select(Condition where, Set<Cell> candidatePks) {
         if (where != null) {
             where.check(schema.field(where.field()));
@@ -68,7 +105,11 @@ public final class Table implements Serializable {
         return result;
     }
 
-    /** Добавляет записи, отклоняя повторные первичные ключи внутри пакета. */
+    /**
+     * Adds records and rejects duplicate primary keys.
+     *
+     * @param records the records to add
+     */
     public void insertAll(List<Record> records) {
         Set<Cell> batch = new LinkedHashSet<>();
         for (Record record : records) {
@@ -82,7 +123,12 @@ public final class Table implements Serializable {
         }
     }
 
-    /** Заменяет записи, предварительно проверяя уникальность новых ключей. */
+    /**
+     * Replaces records after validating their new primary keys.
+     *
+     * @param before the original records
+     * @param updated the replacement records
+     */
     public void replaceAll(Collection<Record> before, Collection<Record> updated) {
         if (before.size() != updated.size()) {
             throw new IllegalArgumentException("Before and after record counts differ");
@@ -110,16 +156,31 @@ public final class Table implements Serializable {
         }
     }
 
+    /**
+     * Deletes records from the table.
+     *
+     * @param records the records to delete
+     */
     public void deleteAll(Collection<Record> records) {
         for (Record record : records) {
             rows.remove(primaryKeyOf(record));
         }
     }
 
+    /**
+     * Returns a copy of the record list.
+     *
+     * @return the table records
+     */
     public List<Record> records() {
         return new ArrayList<>(rows.values());
     }
 
+    /**
+     * Returns the number of records.
+     *
+     * @return the record count
+     */
     public int size() {
         return rows.size();
     }

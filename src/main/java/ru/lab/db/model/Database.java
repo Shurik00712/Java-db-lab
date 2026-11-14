@@ -6,21 +6,30 @@ import ru.lab.db.error.DbException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** Набор таблиц и описаний индексов с проверкой связей между таблицами. */
+/** Stores tables and index definitions and checks references between tables. */
 public final class Database implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    /** Database tables by name. */
     private final Map<String, Table> tables = new LinkedHashMap<>();
+    /** Definitions of the created indexes. */
     private final List<IndexSpec> indexes = new ArrayList<>();
 
+    /** Creates an empty database. */
     public Database() {
     }
 
+    /**
+     * Adds a table.
+     *
+     * @param table the table to add
+     */
     public void add(Table table) {
         Objects.requireNonNull(table, "table");
         String name = table.schema().name();
@@ -30,7 +39,11 @@ public final class Database implements Serializable {
         tables.put(name, table);
     }
 
-    /** Удаляет таблицу, её описания индексов и проверяет входящие ссылки. */
+    /**
+     * Removes a table and its indexes if no other table references it.
+     *
+     * @param name the table name
+     */
     public void drop(String name) {
         table(name);
         for (Table child : tables.values()) {
@@ -44,9 +57,18 @@ public final class Database implements Serializable {
             }
         }
         tables.remove(name);
-        indexes.removeIf(spec -> spec.table().equals(name));
+        Iterator<IndexSpec> iterator = indexes.iterator();
+        while (iterator.hasNext()) {
+            if (iterator.next().table().equals(name)) iterator.remove();
+        }
     }
 
+    /**
+     * Returns a table by name.
+     *
+     * @param name the table name
+     * @return the table
+     */
     public Table table(String name) {
         Table found = tables.get(name);
         if (found == null) {
@@ -55,32 +77,67 @@ public final class Database implements Serializable {
         return found;
     }
 
+    /**
+     * Checks whether a table exists.
+     *
+     * @param name the table name
+     * @return {@code true} if the table exists
+     */
     public boolean has(String name) {
         return tables.containsKey(name);
     }
 
+    /**
+     * Returns the tables in this database.
+     *
+     * @return the database tables
+     */
     public Collection<Table> tables() {
         return tables.values();
     }
 
+    /**
+     * Returns the index definitions.
+     *
+     * @return the index definitions
+     */
     public List<IndexSpec> indexes() {
         return indexes;
     }
 
+    /**
+     * Adds an index definition.
+     *
+     * @param spec the index definition
+     */
     public void addIndex(IndexSpec spec) {
         indexes.add(Objects.requireNonNull(spec, "spec"));
     }
 
+    /**
+     * Removes an index definition by name.
+     *
+     * @param name the index name
+     */
     public void removeIndex(String name) {
-        indexes.removeIf(spec -> spec.name().equals(name));
+        Iterator<IndexSpec> iterator = indexes.iterator();
+        while (iterator.hasNext()) {
+            if (iterator.next().name().equals(name)) iterator.remove();
+        }
     }
 
+    /** Checks references declared by all tables. */
     public void checkReferences() {
         for (Table table : tables.values()) {
             checkReferences(table);
         }
     }
 
+    /**
+     * Checks the references declared by a table schema.
+     *
+     * @param table the table to check
+     */
     public void checkReferences(Table table) {
         for (Reference reference : table.schema().references()) {
             Table target = table.schema().name().equals(reference.targetTable())
@@ -108,6 +165,12 @@ public final class Database implements Serializable {
         }
     }
 
+    /**
+     * Checks the foreign keys of a new record.
+     *
+     * @param table the table receiving the record
+     * @param record the record to insert
+     */
     public void checkInsert(Table table, Record record) {
         for (Reference reference : table.schema().references()) {
             Cell value = record.get(reference.field());
@@ -122,6 +185,13 @@ public final class Database implements Serializable {
         }
     }
 
+    /**
+     * Checks foreign keys and whether the primary key can be changed.
+     *
+     * @param table the table being updated
+     * @param before the original record
+     * @param after the updated record
+     */
     public void checkUpdate(Table table, Record before, Record after) {
         for (Reference reference : table.schema().references()) {
             Cell oldValue = before.get(reference.field());
@@ -155,6 +225,12 @@ public final class Database implements Serializable {
         }
     }
 
+    /**
+     * Checks whether other records reference records to be deleted.
+     *
+     * @param table the table containing records to delete
+     * @param records the records to delete
+     */
     public void checkDelete(Table table, Collection<Record> records) {
         String tableName = table.schema().name();
         for (Table child : tables.values()) {

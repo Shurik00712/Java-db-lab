@@ -3,12 +3,17 @@ package ru.lab.db.model;
 import java.util.Arrays;
 import java.util.Collections;
 
-/** Встроенные схемы предметной области: работодатели и вакансии. */
+/** Built-in schemas for employers and vacancies. */
 public final class Schemas {
 
     private Schemas() {
     }
 
+    /**
+     * Returns the employers table schema.
+     *
+     * @return the table schema
+     */
     public static Schema employers() {
         return new Schema(
             "employers",
@@ -22,6 +27,11 @@ public final class Schemas {
         );
     }
 
+    /**
+     * Returns the vacancies table schema.
+     *
+     * @return the schema with a reference to an employer
+     */
     public static Schema vacancies() {
         return new Schema(
             "vacancies",
@@ -39,6 +49,11 @@ public final class Schemas {
         );
     }
 
+    /**
+     * Creates a database with the built-in tables.
+     *
+     * @return a database with the employers and vacancies tables
+     */
     public static Database create() {
         Database db = new Database();
         db.add(new Table(employers()));

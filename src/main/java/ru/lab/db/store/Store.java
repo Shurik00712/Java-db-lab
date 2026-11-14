@@ -14,17 +14,28 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
-/** Сохраняет базу данных целиком в один файл через Java-сериализацию. */
+/** Saves the entire database to one file using Java serialization. */
 public final class Store {
 
     private static final String FILE = "database.dat";
 
     private final Path dir;
 
+    /**
+     * Creates a store in the given directory.
+     *
+     * @param dir the database directory
+     */
     public Store(Path dir) {
         this.dir = dir;
     }
 
+    /**
+     * Loads the database or creates it with the built-in tables.
+     *
+     * @return the loaded database
+     * @throws StorageException if the file cannot be read or validated
+     */
     public Database load() {
         try {
             Files.createDirectories(dir);
@@ -50,6 +61,12 @@ public final class Store {
         }
     }
 
+    /**
+     * Saves the database by replacing the file, using an atomic move when supported.
+     *
+     * @param database the database to save
+     * @throws StorageException if the database cannot be written
+     */
     public void save(Database database) {
         try {
             Files.createDirectories(dir);

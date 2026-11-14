@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/** Разбирает поддерживаемое подмножество SQL в объекты Statement. */
+/** Parses the supported SQL subset into {@link Statement} objects. */
 public final class Parser {
 
     private static final class FieldDefinition {
@@ -40,11 +40,22 @@ public final class Parser {
     private final List<Token> tokens;
     private int index;
 
+    /**
+     * Creates a parser for a command.
+     *
+     * @param sql the SQL-like command
+     */
     public Parser(String sql) {
         this.tokens = new Lexer(sql).tokenize();
         this.index = 0;
     }
 
+    /**
+     * Parses the command into a {@link Statement}.
+     *
+     * @return the parsed command
+     * @throws ParseException if the command does not match the supported syntax
+     */
     public Statement parse() {
         if (peek().kind() == Token.Kind.EOF) {
             throw new ParseException("Empty command", 0);

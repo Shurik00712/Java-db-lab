@@ -11,7 +11,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-/** Hash-индекс по одному полю, ускоряющий поиск по равенству. */
+/** Hash index on one field for faster equality searches. */
 public final class HashIndex {
 
     private final String name;
@@ -20,6 +20,14 @@ public final class HashIndex {
     private final String primaryKeyField;
     private final Map<Cell, Set<Cell>> buckets = new LinkedHashMap<>();
 
+    /**
+     * Creates an index for a field value and the table primary key.
+     *
+     * @param name the index name
+     * @param table the table name
+     * @param field the indexed field
+     * @param primaryKeyField the primary key field
+     */
     public HashIndex(String name, String table, String field, String primaryKeyField) {
         if (name == null || name.isEmpty()) throw new IllegalArgumentException("index name");
         if (table == null || table.isEmpty()) throw new IllegalArgumentException("table name");
@@ -33,14 +41,42 @@ public final class HashIndex {
         this.primaryKeyField = primaryKeyField;
     }
 
+    /**
+     * Returns the index name.
+     *
+     * @return the index name
+     */
     public String name() { return name; }
+
+    /**
+     * Returns the table name.
+     *
+     * @return the table name
+     */
     public String table() { return table; }
+
+    /**
+     * Returns the indexed field name.
+     *
+     * @return the field name
+     */
     public String field() { return field; }
 
+    /**
+     * Adds a record to the index.
+     *
+     * @param record the record to add
+     */
     public void onInsert(Record record) {
         add(record.get(field), record.get(primaryKeyField));
     }
 
+    /**
+     * Updates a record's key in the index.
+     *
+     * @param before the original record
+     * @param after the updated record
+     */
     public void onUpdate(Record before, Record after) {
         Cell oldKey = before.get(field);
         Cell newKey = after.get(field);
@@ -55,10 +91,20 @@ public final class HashIndex {
         }
     }
 
+    /**
+     * Removes a record from the index.
+     *
+     * @param record the record to remove
+     */
     public void onDelete(Record record) {
         remove(record.get(field), record.get(primaryKeyField));
     }
 
+    /**
+     * Rebuilds the index from all table records.
+     *
+     * @param records the table records
+     */
     public void rebuild(Collection<Record> records) {
         buckets.clear();
         for (Record record : records) {
@@ -66,6 +112,13 @@ public final class HashIndex {
         }
     }
 
+    /**
+     * Returns primary keys for a supported equality condition.
+     *
+     * @param literal the value to search for
+     * @param operator the comparison operator
+     * @return the matching keys, or {@code null} if the operator is unsupported
+     */
     public Set<Cell> candidates(Cell literal, String operator) {
         if (!Condition.EQ.equals(operator)) return null;
         Set<Cell> bucket = buckets.get(literal);

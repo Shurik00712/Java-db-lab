@@ -16,13 +16,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Создаёт индексы и поддерживает их актуальность при изменении таблиц. */
+/** Creates indexes and keeps them up to date when tables change. */
 public final class IndexManager {
 
     private final Database database;
     private final Map<String, HashIndex> byName = new LinkedHashMap<>();
     private final Map<String, HashIndex> byTableField = new LinkedHashMap<>();
 
+    /**
+     * Creates a manager and rebuilds saved indexes.
+     *
+     * @param database the database
+     */
     public IndexManager(Database database) {
         this.database = database;
         for (IndexSpec spec : database.indexes()) {
@@ -40,6 +45,14 @@ public final class IndexManager {
         byTableField.put(keyOf(spec.table(), spec.field()), index);
     }
 
+    /**
+     * Creates an index and adds its definition to the database.
+     *
+     * @param name the index name
+     * @param tableName the table name
+     * @param fieldName the indexed field name
+     * @return the created index
+     */
     public HashIndex create(String name, String tableName, String fieldName) {
         if (name == null || name.trim().isEmpty()) {
             throw new ConstraintViolationException("Index name must not be empty");
@@ -62,14 +75,32 @@ public final class IndexManager {
         return index;
     }
 
+    /**
+     * Finds an index by name.
+     *
+     * @param name the index name
+     * @return the index, or {@code null}
+     */
     public HashIndex findByName(String name) {
         return byName.get(name);
     }
 
+    /**
+     * Finds an index by table and field.
+     *
+     * @param tableName the table name
+     * @param fieldName the field name
+     * @return the index, or {@code null}
+     */
     public HashIndex findByField(String tableName, String fieldName) {
         return byTableField.get(keyOf(tableName, fieldName));
     }
 
+    /**
+     * Removes an index and its definition.
+     *
+     * @param name the index name
+     */
     public void drop(String name) {
         HashIndex index = byName.remove(name);
         if (index != null) {
@@ -78,6 +109,11 @@ public final class IndexManager {
         }
     }
 
+    /**
+     * Removes all indexes for a table.
+     *
+     * @param tableName the table name
+     */
     public void dropTable(String tableName) {
         List<String> toDrop = new ArrayList<>();
         for (HashIndex index : byName.values()) {
@@ -86,6 +122,12 @@ public final class IndexManager {
         for (String name : toDrop) drop(name);
     }
 
+    /**
+     * Updates indexes after inserting records.
+     *
+     * @param table the table
+     * @param records the inserted records
+     */
     public void onInsertAll(Table table, List<Record> records) {
         for (HashIndex index : byName.values()) {
             if (index.table().equals(table.schema().name())) {
@@ -94,12 +136,25 @@ public final class IndexManager {
         }
     }
 
+    /**
+     * Updates indexes after a record changes.
+     *
+     * @param table the table
+     * @param before the original record
+     * @param after the updated record
+     */
     public void onUpdate(Table table, Record before, Record after) {
         for (HashIndex index : byName.values()) {
             if (index.table().equals(table.schema().name())) index.onUpdate(before, after);
         }
     }
 
+    /**
+     * Updates indexes after deleting records.
+     *
+     * @param table the table
+     * @param records the deleted records
+     */
     public void onDeleteAll(Table table, Collection<Record> records) {
         for (HashIndex index : byName.values()) {
             if (index.table().equals(table.schema().name())) {
@@ -108,7 +163,13 @@ public final class IndexManager {
         }
     }
 
-    /** Возвращает ключи-кандидаты по индексу или null, если индекса нет. */
+    /**
+     * Returns index candidate keys, or {@code null} if no index is available.
+     *
+     * @param tableName the table name
+     * @param condition the selection condition
+     * @return candidate keys, or {@code null} if no matching index exists
+     */
     public Set<Cell> candidates(String tableName, Condition condition) {
         if (condition == null) return null;
         HashIndex index = findByField(tableName, condition.field());

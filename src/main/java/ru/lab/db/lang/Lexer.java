@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
-/** Разбивает SQL-команду на токены. */
+/** Splits an SQL command into tokens. */
 public final class Lexer {
 
     private static final Set<String> KEYWORDS = new HashSet<>(Arrays.asList(
@@ -21,10 +21,20 @@ public final class Lexer {
     private final String source;
     private int position;
 
+    /**
+     * Creates a lexer for an SQL command.
+     *
+     * @param source the command text
+     */
     public Lexer(String source) {
         this.source = source == null ? "" : source;
     }
 
+    /**
+     * Splits the command into tokens, including the final EOF token.
+     *
+     * @return the tokens
+     */
     public List<Token> tokenize() {
         List<Token> tokens = new ArrayList<>();
         while (true) {

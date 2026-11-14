@@ -4,9 +4,19 @@ import ru.lab.db.model.Record;
 
 import java.util.List;
 
-/** Выводит результаты запросов в табличном виде. */
+/** Prints query results as tables. */
 public final class Printer {
 
+    /** Creates a console output formatter. */
+    public Printer() {
+    }
+
+    /**
+     * Prints records as a table.
+     *
+     * @param columns the columns to print
+     * @param records the result records
+     */
     public void select(List<String> columns, List<Record> records) {
         int[] widths = widths(columns, records);
         separator(widths);
@@ -20,18 +30,33 @@ public final class Printer {
             printRow(cells, widths);
         }
         separator(widths);
-        System.out.println(records.size() + " "
-            + plural(records.size(), "строка", "строки", "строк"));
+        System.out.println(records.size() + " " + plural(records.size(), "row", "rows"));
     }
 
+    /**
+     * Prints the number of modified records.
+     *
+     * @param action the action description
+     * @param count the number of records
+     */
     public void modified(String action, int count) {
-        System.out.println(message(count, action));
+        System.out.println(count + " " + plural(count, "row", "rows") + " " + action);
     }
 
+    /**
+     * Prints an error message.
+     *
+     * @param message the error message
+     */
     public void error(String message) {
-        System.out.println("Ошибка: " + message);
+        System.out.println("Error: " + message);
     }
 
+    /**
+     * Prints an informational message.
+     *
+     * @param message the message text
+     */
     public void info(String message) {
         System.out.println(message);
     }
@@ -69,16 +94,7 @@ public final class Printer {
         System.out.println(out);
     }
 
-    private String message(int n, String action) {
-        return n + " " + plural(n, "строка", "строки", "строк")
-            + " " + action + plural(n, "а", "ы", "о");
-    }
-
-    private String plural(int n, String one, String few, String many) {
-        int mod10 = n % 10;
-        int mod100 = n % 100;
-        if (mod10 == 1 && mod100 != 11) return one;
-        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
-        return many;
+    private String plural(int n, String one, String many) {
+        return n == 1 ? one : many;
     }
 }
